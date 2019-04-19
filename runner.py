@@ -26,7 +26,7 @@ ap.add_argument("-b", "--buffer-size", type=int, default=35,
 #    help="toggle running image stills, input in secs for interval")
 ap.add_argument("--debugger", required=False,
     help="toggle debugger for image still" )
-args = vars(ap.parse_args())
+args = ap.parse_args()
 
 #function for image extraction
 def extractImages(video_source_path,seconds):
@@ -47,12 +47,12 @@ def extractImages(video_source_path,seconds):
 
 
 # initialize the video stream 
-vs = cv2.VideoCapture(args["video"])
-vidname = os.path.basename(args["video"])
+vs = cv2.VideoCapture(args.video)
+vidname = os.path.basename(args.video)
 
 # initialize key clip writer and the consecutive number of
 # frames that have *not* contained any action
-kcw = KeyClipWriter(bufSize=args["buffer_size"])
+kcw = KeyClipWriter(bufSize=args.buffer_size)
 consecFrames = 0
 #frame count is for timer only, must be done for when cv2.CAP_PROP_POS_MSEC
 # is empty, like in most avi files
@@ -68,18 +68,18 @@ frame_count =0
 debug_var = False
 
 # make the output folder
-if not os.path.exists(args["output"]):
-    os.mkdir(args["output"])
+if not os.path.exists(args.output):
+    os.mkdir(args.output)
 else:
     print("Warning: output directory exists")
 
 # keep looping
-while not args["debugger"]:
+while not args.debugger:
     # grab the current frame, resize it, and initialize a
     # boolean used to indicate if the consecutive frames
     # counter should be updated
     frame = vs.read()
-    frame = frame if args.get("video", None) is None else frame[1]
+    frame = frame if args.video is None else frame[1]
     #frame = imutils.resize(frame, width=600)
     f_width = vs.get(cv2.CAP_PROP_FRAME_WIDTH)
     f_height = vs.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -145,12 +145,12 @@ while not args["debugger"]:
             #timestamp = datetime.datetime.utcfromtimestamp(times//1000.0)
             #use trac
             #try to reverse past to one sec before clip, approx 30 frames
-            vs.set(1,frame_count-args["buffer_size"])
+            vs.set(1,frame_count-args.buffer_size)
 
             debug_var=True
-            p = "{}/{}.avi".format(args["output"],
+            p = "{}/{}.avi".format(args.output,
                  str(vidname)+"_"+str(timestamp.strftime("%H:%M:%S")))
-            kcw.start(p, cv2.VideoWriter_fourcc(*args["codec"]),
+            kcw.start(p, cv2.VideoWriter_fourcc(*args.codec),
                 10)
 
     # otherwise, no action has taken place in this frame, so
@@ -163,7 +163,7 @@ while not args["debugger"]:
     kcw.update(frame)
     # if we are recording and reached a threshold on consecutive
     # number of frames with no action, stop recording the clip
-    if kcw.recording and consecFrames == (args["buffer_size"]+2):
+    if kcw.recording and consecFrames == (args.buffer_size+2):
         print ("videoclip " + p)
         kcw.finish()
 
@@ -181,14 +181,14 @@ if kcw.recording:
 
 # do a bit of cleanup
 
-#if debug_var == True & args["debugger"]==False:
+#if debug_var == True & args.debugger==False:
 #    print ("videos recorded, check output")
 #else:
     print ("no videos recorded!")
 
-vs.stop() if args.get("video", None) is None else vs.release()
+vs.stop() if args.video is None else vs.release()
 
-for videopath in pathlib.Path(args["output"]).glob('**/*'):
+for videopath in pathlib.Path(args.output).glob('**/*'):
     print(videopath.absolute())
     extractImages(videopath, 0.25)
 
