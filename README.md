@@ -8,7 +8,6 @@ Scripts for detecting herring runs in a fish ladder at the Cape Cod Canal. Separ
 
 * `image_extractor.py`: Takes in a video and splits it up into frames at the specified interval (in milliseconds).
 
-* `runner.py`: Script with a convient CLI for running both detection and image extraction.
 
 ## Setup
 
@@ -16,6 +15,7 @@ Scripts for detecting herring runs in a fish ladder at the Cape Cod Canal. Separ
     python3 -m venv .venv
     source .venv/bin/activate
     python -m pip install -r requirements.txt
+
 
 ## Timing
 
