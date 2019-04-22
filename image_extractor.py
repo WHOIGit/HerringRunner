@@ -1,60 +1,61 @@
 #!/usr/bin/env python
+'''
+This script takes a video and splits it into frames. Requires ffmpeg(1).
+'''
 import argparse
-import datetime
+import json
 import os
-import pathlib
-import time
+import shlex
+import subprocess
+import sys
 
-import cv2
-import imutils
-
-
-#function for image extraction
-def extractImages(video_source_path,seconds,out_path):
-    #works only on certain file formats with msecs, includes avi and mp4
-    #default is .25 secs or 250 millisecs
-    vidcap = cv2.VideoCapture(str(video_source_path))
-    res, test = vidcap.read()
-    count = 0
-    #due to limitations of video containers and opencv
-    #must first get total duration of video before extracting frames by sec
-    
-    
-    
-    
-    n = seconds   # Desired interval of milisseconds to include
-    fps = vidcap.get(cv2.CAP_PROP_FPS)
-    frameCount = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
-    duration = frameCount/fps
-    print(n)
-    print(duration)
-
-    if not res:
-        raise Exception('empty video in file : ' + str(video_source_path))
-    while res:
-      msecs= (count*n)*1000
-      vidcap.set(0,(msecs))      
-      res, image = vidcap.read()
-      print ('current at : ' +str(vidcap.get(cv2.CAP_PROP_POS_MSEC)))
-      print ('count is: ' + str(count))
-      print ('selection is: ' +str(msecs))
-      print ('{}.count reading a new frame: {} '.format(count,res))
-      cv2.imwrite(os.path.join(out_path, '{}_COUNT_{}.png'.format(os.path.basename(video_source_path),str(count))), image)     # save frame as PNG file
-
-      count += 1
-    vidcap.release()
 
 if __name__ == '__main__':
-    a = argparse.ArgumentParser()
-    a.add_argument('--videos', help='path to directory with videos')
-    a.add_argument('--seconds', help='interval of seconds', default=0.25)
-    a.add_argument('--out', help='path to images')
-    args = a.parse_args()
+  # Parse arguments
+  parser = argparse.ArgumentParser(description=__doc__)
+  parser.add_argument('-v', '--video', required=True,
+    help='path to the video file')
+  parser.add_argument('-o', '--out', required=True,
+    help='directory in which to output frames')
+  parser.add_argument('-i', '--interval', required=True, type=float,
+    help='frame interval (milliseconds)')
+  parser.add_argument('-s', '--start',
+    help='extract frames from this timestamp')
+  parser.add_argument('-e', '--end',
+    help='extract frames until this timestamp')
+  parser.add_argument('--dry-run', action='store_true',
+    help='just display command to run, do not run it')
+  args = parser.parse_args()
 
-    for videopath in pathlib.Path(args.videos).glob('**/*'):
-        folderpath = (os.path.join(args.out,os.path.basename((os.path.splitext(videopath)[0]))))
-        print('saving to ' + str(folderpath))
-        if not os.path.exists(folderpath):
-            os.mkdir(folderpath)
-        print(videopath.absolute())
-        extractImages(videopath, args.seconds, folderpath)
+  # Build up the FFmpeg command
+  cmd = ['ffmpeg', '-hide_banner']
+  if args.start:
+    cmd.extend(['-ss', args.start])  # start time
+  cmd.extend(['-i', args.video])  # input file
+  if args.end:
+    cmd.extend(['-to', args.end])  # stop time
+  cmd.extend(['-vf', 'fps=1000/%f' % args.interval])  # fps video filter
+  cmd.append(os.path.join(args.out, 'frame_%06d.png'))
+
+  # Dry run: just print the command
+  if args.dry_run:
+    print(' '.join(shlex.quote(x) for x in cmd))
+    sys.exit(0)
+
+  # For safety, do not output to a non-empty directory
+  if not os.path.exists(args.out):
+    os.makedirs(args.out)
+  elif os.listdir(args.out):
+    print('Error: %s: Directory not empty' % args.out, file=sys.stderr)
+    sys.exit(1)
+
+  # Record the arguments we were called with
+  with open(os.path.join(args.out, 'info.json'), 'w') as f:
+    json.dump({
+      'args': vars(args),
+      'cmd': cmd
+    }, f, indent=4, sort_keys=True)
+    f.write('\n')
+
+  # Invoke the command
+  subprocess.check_call(cmd)
