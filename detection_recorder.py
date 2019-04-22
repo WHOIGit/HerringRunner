@@ -13,19 +13,19 @@ from pyimagesearch.keyclipwriter import KeyClipWriter
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument(
-    "-o", "--output", required=True, help="path to output directory")
-ap.add_argument("-v", "--video", required=True, help="path to the video file")
+    '-o', '--output', required=True, help='path to output directory')
+ap.add_argument('-v', '--video', required=True, help='path to the video file')
 ap.add_argument(
-    "-f", "--fps", type=int, default=20, help="FPS of output video")
+    '-f', '--fps', type=int, default=20, help='FPS of output video')
 ap.add_argument(
-    "-c", "--codec", type=str, default="MJPG", help="codec of output video")
+    '-c', '--codec', type=str, default='MJPG', help='codec of output video')
 ap.add_argument(
-    "-b",
-    "--buffer-size",
+    '-b',
+    '--buffer-size',
     type=int,
     default=35,
-    help="buffer size of video clip writer")
-args = vars(ap.parse_args())
+    help='buffer size of video clip writer')
+args = ap.parse_args()
 
 # initialize the video stream
 vs = cv2.VideoCapture(args.video)
@@ -51,7 +51,7 @@ debug_var = False
 if not os.path.exists(args.output):
     os.mkdir(args.output)
 else:
-    print("Warning: output directory exists")
+    print('Warning: output directory exists')
 
 # keep looping
 while True:
@@ -80,13 +80,13 @@ while True:
     if frame is None:
         break
 
-    #  convert frame to grayscale, and blur with "blursize"
+    #  convert frame to grayscale, and blur with 'blursize'
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (25, 25), 0)
     # if the average frame is None, initialize it
     if avgFrame is None:
-        print("[INFO] starting background model...")
-        avgFrame = gray.copy().astype("float")
+        print('[INFO] starting background model...')
+        avgFrame = gray.copy().astype('float')
         continue
 
 # accumulate the weighted average between the current frame and
@@ -94,18 +94,21 @@ while True:
 # frame and running average
     cv2.accumulateWeighted(gray, avgFrame, 0.6)
     frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avgFrame))
-    thresh = cv2.threshold(frameDelta, 5, 255, cv2.THRESH_BINARY)[1]
+    _, thresh = cv2.threshold(frameDelta, 5, 255, cv2.THRESH_BINARY)
 
     # dilate the thresholded image to fill in holes, then find contours
     # on thresholded image
     thresh = cv2.dilate(thresh, None, iterations=2)
-    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                            cv2.CHAIN_APPROX_SIMPLE)
-    cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+
+    # NOTE: This function returns a different number of parameters on different
+    # versions of OpenCV.
+    contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                                   cv2.CHAIN_APPROX_SIMPLE)
+
     #DEBUG count countours
     #print (len(cnts))
-    #print (str(timestamp.strftime("%H:%M:%S")))
-    for c in cnts:
+    #print (str(timestamp.strftime('%H:%M:%S')))
+    for c in contours:
         # compute the area for each contour and increment surface
         currentsurface += cv2.contourArea(c)
     #backcontours = contours #Save contours
@@ -116,7 +119,7 @@ while True:
     # only proceed if at least one contour was found
     if avgsurf >= 21:
         count = avgsurf
-        print(str(count) + " / " + str(timestamp.strftime("%H:%M:%S")))
+        print(str(count) + ' / ' + str(timestamp.strftime('%H:%M:%S')))
         updateConsecFrames = False
         consecFrames = 0
         # if we are not already recording, start recording
@@ -129,9 +132,9 @@ while True:
             vs.set(1, frame_count - args.buffer_size)
 
             debug_var = True
-            p = "{}/{}.avi".format(
+            p = '{}/{}.avi'.format(
                 args.output,
-                str(vidname) + "_" + str(timestamp.strftime("%H:%M:%S")))
+                str(vidname) + '_' + str(timestamp.strftime('%H:%M:%S')))
             kcw.start(p, cv2.VideoWriter_fourcc(*args.codec), 10)
 
     # otherwise, no action has taken place in this frame, so
@@ -145,15 +148,15 @@ while True:
     # if we are recording and reached a threshold on consecutive
     # number of frames with no action, stop recording the clip
     if kcw.recording and consecFrames == (args.buffer_size + 2):
-        print("videoclip " + p)
+        print('videoclip ' + p)
         kcw.finish()
 
     # show the frame
-    cv2.imshow("Frame", frame)
+    cv2.imshow('Frame', frame)
     key = cv2.waitKey(1) & 0xFF
 
     # if the `q` key was pressed, break from the loop
-    if key == ord("q"):
+    if key == ord('q'):
         break
 
 # if we are in the middle of recording a clip, wrap it up
@@ -163,9 +166,9 @@ if kcw.recording:
 # do a bit of cleanup
 
 if debug_var == True & args.debugger == False:
-    print("videos recorded, check output")
+    print('videos recorded, check output')
 else:
-    print("no videos recorded!")
+    print('no videos recorded!')
 
 vs.stop() if args.video is None else vs.release()
 cv2.destroyAllWindows()
