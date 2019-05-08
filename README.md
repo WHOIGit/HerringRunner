@@ -15,6 +15,8 @@ Scripts for detecting herring runs in a fish ladder at the Cape Cod Canal. Separ
 ## Setup
 
     sudo apt-get install ffmpeg python3 python3-venv
+    git clone https://github.com/WHOIGit/HerringRunner.git
+    cd HerringRunner
     python3 -m venv .venv
     source .venv/bin/activate
     python -m pip install -r requirements.txt
