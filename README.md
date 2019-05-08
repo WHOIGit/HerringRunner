@@ -10,6 +10,7 @@ Scripts for detecting herring runs in a fish ladder at the Cape Cod Canal. Separ
 
 * `frame_extractor.py`: Takes in a video and splits it up into frames at the specified interval.
 
+* `was_detected.py`: Takes in a timestamp and a JSON file and decides if anything was detected at that timestamp or not.
 
 
 ## Setup
