@@ -10,7 +10,7 @@ import shlex
 import subprocess
 import sys
 
-from utils import parse_duration
+import utils
 
 
 if __name__ == '__main__':
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     help='directory in which to output frames')
   parser.add_argument('-i', '--interval', required=True, type=float,
     help='frame interval (seconds)')
+  parser.add_argument('-j', '--json', help='JSON file containing detections')
   parser.add_argument('-s', '--start',
     help='extract frames from this timestamp')
   parser.add_argument('-e', '--end',
@@ -30,23 +31,47 @@ if __name__ == '__main__':
     help='just display command to run, do not run it')
   args = parser.parse_args()
 
-  # Build up the FFmpeg command
-  cmd = ['ffmpeg', '-hide_banner']
-  cmd.extend(['-i', args.video])  # input file
-  if args.start:
-    cmd.extend(['-ss', args.start])  # start time
-  if args.end:
-    # In case start == end, bump end by a fraction of a second so that ffmpeg
-    # does not complain
-    end = parse_duration(args.end)
-    end += datetime.timedelta(milliseconds=1)
-    cmd.extend(['-to', str(end)])  # stop time
-  cmd.extend(['-vf', 'fps=1/%f' % args.interval])  # fps video filter
-  cmd.append(os.path.join(args.out, 'frame_%06d.png'))
+  detections = []
 
-  # Dry run: just print the command
+  if args.json:
+    with open(args.json) as j:
+      data = json.load(j)
+      assert os.path.basename(data['video']) == os.path.basename(args.video)
+      for start, end in data['detections']:
+        detections.append((
+          utils.parse_duration(start),
+          utils.parse_duration(end)
+        ))
+
+  if args.start and args.end:
+    start = utils.parse_duration(args.start)
+    end = utils.parse_duration(args.end)
+    detections.append((start, end))
+
+  if not detections:
+    # Dummy detection that just says extract every frame
+    detections.append((None, None))
+
+  # Build up the FFmpeg commands to execute
+  cmds = []
+  for i, (start, end) in enumerate(detections):
+    cmd = ['ffmpeg', '-hide_banner']
+    cmd.extend(['-i', args.video])  # input file
+    if start:
+      cmd.extend(['-ss', str(start)])  # start time
+    if end:
+      # In case start == end, bump end by a fraction of a second so that ffmpeg
+      # does not complain
+      end += datetime.timedelta(milliseconds=1)
+      cmd.extend(['-to', str(end)])  # stop time
+    cmd.extend(['-vf', 'fps=1/%f' % args.interval])  # fps video filter
+    cmd.append(os.path.join(args.out, 'frame_%i_%%06d.png' % i))
+    cmds.append(cmd)
+
+  # Dry run: just print the commands
   if args.dry_run:
-    print(' '.join(shlex.quote(x) for x in cmd))
+    for cmd in cmds:
+      print(' '.join(shlex.quote(x) for x in cmd))
     sys.exit(0)
 
   # For safety, do not output to a non-empty directory
@@ -60,9 +85,10 @@ if __name__ == '__main__':
   with open(os.path.join(args.out, 'info.json'), 'w') as f:
     json.dump({
       'args': vars(args),
-      'cmd': cmd
+      'cmds': cmds
     }, f, indent=4, sort_keys=True, default=utils.jsonconverter)
     f.write('\n')
 
   # Invoke the command
-  subprocess.check_call(cmd)
+  for cmd in cmds:
+    subprocess.check_call(cmd)
