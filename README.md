@@ -4,9 +4,12 @@ Scripts for detecting herring runs in a fish ladder at the Cape Cod Canal. Separ
 
 [Zooniverse]: https://zooniverse.org
 
-* `detector.py`: Uses a modified MOG background subtraction algorithm to detect motion in a video clip of the fish ladder. Outputs time ranges within the video that contain motion.
+* `detector.py`: Uses a modified MOG background subtraction algorithm to detect motion in a video clip of the fish ladder. Outputs time ranges within the video that contain detected objects.
 
-* `image_extractor.py`: Takes in a video and splits it up into frames at the specified interval (in milliseconds).
+* `clip_extractor.py`: Takes in a video and extracts a clip from it.
+
+* `frame_extractor.py`: Takes in a video and splits it up into frames at the specified interval.
+
 
 
 ## Setup
