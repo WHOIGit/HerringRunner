@@ -15,6 +15,7 @@ class VideoCapture(QtCore.QObject):
 
     def __init__(self, source, parent=None):
         super().__init__(parent)
+        self.source = source
         self.cap = cv2.VideoCapture(source)
     
     @pyqtProperty(int)
@@ -87,6 +88,14 @@ def F(*args, widget=None):
     return widget
 
 
+PreviewModes = (
+    'Background',
+    'Frame',
+    'Frame - Background',
+    'Threshold',
+    'Dilate',
+    'Contours',
+)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -128,8 +137,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.blurSlider.setToolTip(str(0 if n == 0 else 2*(n - 1) + 1)))
         self.blurSlider.setRange(0, 50)
         self.blurSlider.setValue(13)
-        
-        
 
         self.bgWeightSlider = QtWidgets.QSlider(Qt.Horizontal)
         self.bgWeightSlider.valueChanged.connect(lambda n: \
@@ -156,6 +163,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.detectionAreaSlider.setValue(21)
 
         self.detectionAreaLabel = QtWidgets.QLabel('0.00%')
+
+        self.previewModeLabel = QtWidgets.QLabel()
+        self.previewModeLabel.setAlignment(Qt.AlignHCenter)
+
+        self.previewModeSlider = QtWidgets.QSlider(Qt.Horizontal)
+        self.previewModeSlider.valueChanged.connect(lambda n: \
+            self.previewModeLabel.setText('Displaying ' + PreviewModes[n]))
+        self.previewModeSlider.setRange(0, len(PreviewModes) - 1)
+        self.previewModeSlider.setValue(1)
+
+        self.clickpointsCheckBox = QtWidgets.QCheckBox('Show ClickPoints')
 
         self.frameViewer = QtWidgets.QLabel()
         self.frameViewer.setFrameStyle(QtWidgets.QFrame.Box)
@@ -188,11 +206,10 @@ class MainWindow(QtWidgets.QMainWindow):
                         ('Current detection area:', self.detectionAreaLabel),
                         widget=QtWidgets.QGroupBox('Detection')
                     ),
-                    V(
-                        QtWidgets.QRadioButton('Frame'),
-                        QtWidgets.QRadioButton('Frame - Background'),
-                        QtWidgets.QRadioButton('Background'),
-                        QtWidgets.QCheckBox('ClickPoints'),
+                    F(
+                        (self.previewModeSlider,),
+                        (self.previewModeLabel,),
+                        (self.clickpointsCheckBox,),
                         widget=QtWidgets.QGroupBox('Preview')
                     )
                 )
@@ -200,47 +217,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.messageLabel
         )
         self.setCentralWidget(mainWidget)
-
-
-        # mainWidget = QtWidgets.QWidget(self)
-        # mainLayout = QtWidgets.QVBoxLayout()
-
-        # topWidget = QtWidgets.QWidget(mainWidget)
-        # bottomWidget = QtWidgets.QWidget(mainWidget)
-        # topLayout = QtWidgets.QHBoxLayout()
-        # bottomLayout = QtWidgets.QHBoxLayout()
-        # mainLayout.addWidget(topWidget)
-        # mainLayout.addWidget(bottomWidget)
-
-        # playbackWidget = QtWidgets.QWidget(mainWidget)
-        # playbackLayout = QtWidgets.QHBoxLayout()
-        # mainLayout.addWidget(playbackWidget)
-
-        # controlWidget = QtWidgets.QWidget(mainWidget)
-        # controlLayout = QtWidgets.QVBoxLayout()
-
-        # self.messageLabel = QtWidgets.QLabel(mainWidget)
-        # self.messageLabel.setText('hello')
-
-        # self.positionSlider = QtWidgets.QSlider(Qt.Vertical, playbackWidget)
-        # self.positionSlider.setRange(0, self.cap.nframes)
-        # self.positionSlider.setInvertedAppearance(True)
-        # #self.positionSlider.sliderMoved.connect(self.setPosition)
-
-        # self.frameLabel = QtWidgets.QLabel(playbackWidget)
-        # self.frameLabel.resize(self.cap.width, self.cap.height)
-        # playbackLayout.addWidget(self.frameLabel)
-
-        # playbackWidget.setLayout(playbackLayout)
-        # mainWidget.setLayout(mainLayout)
-        # self.setCentralWidget(mainWidget)
-
-        # self.cap.gotFrame.connect(self.gotFrame)
-        # self.cap.read()
-
-        # self.cap.frameChanged.connect(self.positionSlider.setValue)
-        # self.cap.timestampChanged.connect(self.newPlaybackPosition)
-
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
