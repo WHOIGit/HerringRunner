@@ -43,7 +43,7 @@ class VideoCapture(QtCore.QObject):
     def timestamp(self):
         msec = self.cap.get(cv2.CAP_PROP_POS_MSEC)
         return datetime.timedelta(milliseconds=msec)
-    
+
     @timestamp.setter
     def timestamp(self, td):
         msec = td / timedelta(milliseconds=1)
@@ -120,14 +120,29 @@ class MainWindow(QtWidgets.QMainWindow):
         print(frame)
         self.cap.frame = frame
 
+    def openVideoFile(self):
+        pass
+
+    def openClickPointsFile(self):
+        pass
+
+    def computeBackground(self):
+        pass
+
     def initUI(self):
         self.setWindowTitle('HerringRunner')
 
         self.cap = VideoCapture('./20170701145052891.avi', self)
 
+        self.loadVideoButton = QtWidgets.QPushButton('Load Video')
+        self.loadVideoButton.clicked.connect(self.openVideoFile)
+
+        self.loadClickPointsButton = QtWidgets.QPushButton('Load ClickPoints')
+        self.loadClickPointsButton.clicked.connect(self.openClickPointsFile)
+
         self.messageLabel = QtWidgets.QLabel()
         self.messageLabel.setText('00:00:00')
-        
+
         self.playbackSlider = QtWidgets.QSlider(Qt.Vertical)
         self.playbackSlider.setInvertedAppearance(True)
 
@@ -143,6 +158,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.bgWeightSlider.setToolTip('%i%%' % n))
         self.bgWeightSlider.setRange(0, 100)
         self.bgWeightSlider.setValue(60)
+
+        self.computeBgButton = QtWidgets.QPushButton('Compute Background')
+        self.computeBgButton.clicked.connect(self.computeBackground)
 
         self.brightnessSlider = QtWidgets.QSlider(Qt.Horizontal)
         self.brightnessSlider.valueChanged.connect(lambda n: \
@@ -190,13 +208,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 ),
                 V(
                     H(
-                        QtWidgets.QPushButton('Load Video'),
-                        QtWidgets.QPushButton('Load ClickPoints'),
+                        self.loadVideoButton,
+                        self.loadClickPointsButton,
                     ),
                     F(
                         ('Blur Radius', self.blurSlider),
                         ('Current Frame Weight', self.bgWeightSlider),
-                        (QtWidgets.QPushButton('Compute Background'),),
+                        (self.computeBgButton,),
                         widget=QtWidgets.QGroupBox('Background')
                     ),
                     F(
