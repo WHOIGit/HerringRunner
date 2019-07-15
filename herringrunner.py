@@ -121,18 +121,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cap.frame = frame
 
     def openVideoFile(self):
-        pass
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(filter="*.avi")
+        if path == '':
+            return  # no file selected
+
+        self.cap = VideoCapture(path, self)
+        self.cap.gotFrame.connect(self.gotFrame)
+        self.cap.read()
 
     def openClickPointsFile(self):
-        pass
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(filter="*.cdb")
+        if path == '':
+            return  # no file selected
+        # TODO: use this file somehow
 
     def computeBackground(self):
         pass
 
     def initUI(self):
         self.setWindowTitle('HerringRunner')
-
-        self.cap = VideoCapture('./20170701145052891.avi', self)
 
         self.loadVideoButton = QtWidgets.QPushButton('Load Video')
         self.loadVideoButton.clicked.connect(self.openVideoFile)
@@ -196,9 +203,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.frameViewer = QtWidgets.QLabel()
         self.frameViewer.setFrameStyle(QtWidgets.QFrame.Box)
         self.frameViewer.setStyleSheet('border: 8px solid red')
-
-        self.cap.gotFrame.connect(self.gotFrame)
-        self.cap.read()
 
         mainWidget = V(
             H(
