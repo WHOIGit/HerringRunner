@@ -104,7 +104,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.initUI()
 
     def gotFrame(self, frame):
-        print('hey')
+        print('got frame')
         # https://stackoverflow.com/a/55468544/6622587
         rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgbImage.shape
@@ -117,20 +117,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.message.setText(str(td))
 
     def setPosition(self, frame):
-        print(frame)
+        print('setting to frame', frame)
         self.cap.frame = frame
 
     def openVideoFile(self):
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(filter="*.avi")
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(filter='*.avi')
         if path == '':
             return  # no file selected
 
         self.cap = VideoCapture(path, self)
         self.cap.gotFrame.connect(self.gotFrame)
-        self.cap.read()
+        self.playbackSlider.setRange(0, self.cap.nframes - 1)
+        self.playbackSlider.setValue(0)
+        self.playbackSlider.valueChanged.connect(self.setPosition)
+        self.setPosition(0)
+
 
     def openClickPointsFile(self):
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(filter="*.cdb")
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(filter='*.cdb')
         if path == '':
             return  # no file selected
         # TODO: use this file somehow
