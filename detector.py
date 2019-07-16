@@ -17,14 +17,14 @@ def preprocess(frame, blur_factor):
 
 def update_background(bg, frame, bg_weight):
     if bg is None:
-        bg = cv2.UMat(gray) if isinstance(frame, cv2.UMat) \
-            else gray.copy().astype('float')
+        return cv2.UMat(frame) if isinstance(frame, cv2.UMat) \
+            else frame.copy().astype('float')
 
     if isinstance(bg, cv2.UMat):
         # accumulateWeighted does not seem to be available?
-        bg = cv2.addWeighted(bg, 1.0 - args.bg_weight, frame, args.bg_weight, 0.0)
+        bg = cv2.addWeighted(bg, 1.0 - bg_weight, frame, bg_weight, 0.0)
     else:
-        cv2.accumulateWeighted(frame, bg, args.bg_weight)
+        cv2.accumulateWeighted(frame, bg, bg_weight)
 
     return bg
 
@@ -40,7 +40,7 @@ def process(frame, bg, threshold=0, dilations=0):
     # Dilate the thresholded image to fill in holes
     if dilations > 0:
         thresh = cv2.dilate(thresh, None, iterations=dilations)
-    
+
     return thresh
 
 
@@ -141,9 +141,6 @@ if __name__ == '__main__':
         frame = preprocess(frame, blur_factor=args.blur_factor)
 
         # Update the background
-        if bg is None:
-            bg = frame
-            continue
         bg = update_background(bg, frame, bg_weight=args.bg_weight)
 
         # Process
