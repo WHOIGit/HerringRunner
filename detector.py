@@ -10,7 +10,7 @@ import utils
 
 def preprocess(frame, blur_factor):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    if args.blur_factor > 0:
+    if blur_factor > 0:
         gray = cv2.GaussianBlur(gray, (blur_factor, blur_factor), 0)
     return gray
 
@@ -166,6 +166,7 @@ if __name__ == '__main__':
 
     json.dump({
         'video': os.path.basename(args.video),
-        'detections': detections
+        'settings': vars(args),
+        'detections': detections,
     }, sys.stdout, indent=4, sort_keys=True, default=utils.jsonconverter)
     print()

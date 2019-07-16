@@ -1,1 +1,2 @@
+-e hg+https://bitbucket.org/fabry_biophysics/clickpoints@90562e2#egg=clickpoints
 opencv-python == 4.1.0.25
