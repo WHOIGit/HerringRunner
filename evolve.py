@@ -54,43 +54,44 @@ def evaluate_inner(individual):
     return (score,)
 
 
+creator.create('FitnessMax', base.Fitness, weights=(1.0,))
+creator.create('Individual', list, fitness=creator.FitnessMax)
+
+toolbox = base.Toolbox()
+
+# Parallelize
+toolbox.register('map', futures.map)
+
+# Attribute generators
+def random_blur_radius():
+    r = random.randrange(30)
+    if r == 0:
+        return 0
+    return 2*r - 1
+
+toolbox.register('attr_interesting', random.uniform, 0.0, 1.0)
+toolbox.register('attr_blur_factor', random_blur_radius)
+toolbox.register('attr_threshold', random.randrange, 100)
+toolbox.register('attr_dilations', random.randrange, 20)
+toolbox.register('attr_bg_weight', random.uniform, 0.0, 1.0)
+
+# Structure initializers
+toolbox.register('individual', tools.initCycle, creator.Individual, (
+    toolbox.attr_interesting,
+    toolbox.attr_blur_factor,
+    toolbox.attr_threshold,
+    toolbox.attr_dilations,
+    toolbox.attr_bg_weight,
+), n=1)
+toolbox.register('population', tools.initRepeat, list, toolbox.individual)
+
+toolbox.register('evaluate', evaluate)
+toolbox.register('mate', tools.cxTwoPoint)
+toolbox.register('mutate', tools.mutFlipBit, indpb=0.05)
+toolbox.register('select', tools.selTournament, tournsize=3)
+
+
 def main():
-    creator.create('FitnessMax', base.Fitness, weights=(1.0,))
-    creator.create('Individual', list, fitness=creator.FitnessMax)
-
-    toolbox = base.Toolbox()
-
-    # Parallelize
-    toolbox.register('map', futures.map)
-
-    # Attribute generators
-    def random_blur_radius():
-        r = random.randrange(30)
-        if r == 0:
-            return 0
-        return 2*r - 1
-
-    toolbox.register('attr_interesting', random.uniform, 0.0, 1.0)
-    toolbox.register('attr_blur_factor', random_blur_radius)
-    toolbox.register('attr_threshold', random.randrange, 100)
-    toolbox.register('attr_dilations', random.randrange, 20)
-    toolbox.register('attr_bg_weight', random.uniform, 0.0, 1.0)
-
-    # Structure initializers
-    toolbox.register('individual', tools.initCycle, creator.Individual, (
-        toolbox.attr_interesting,
-        toolbox.attr_blur_factor,
-        toolbox.attr_threshold,
-        toolbox.attr_dilations,
-        toolbox.attr_bg_weight,
-    ), n=1)
-    toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-
-    toolbox.register('evaluate', evaluate)
-    toolbox.register('mate', tools.cxTwoPoint)
-    toolbox.register('mutate', tools.mutFlipBit, indpb=0.05)
-    toolbox.register('select', tools.selTournament, tournsize=3)
-
     # Run the evolution
     pop = toolbox.population(n=2)
     hof = tools.HallOfFame(1)
