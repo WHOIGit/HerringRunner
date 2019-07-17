@@ -3,6 +3,7 @@ import argparse
 import datetime
 import json
 import os
+import sys
 
 import clickpoints
 import cv2
@@ -22,7 +23,7 @@ args = parser.parse_args()
 
 # Load detection ranges from the JSON file
 detections = []
-with open(args.json) as j:
+with (sys.stdin if args.json == '-' else open(args.json)) as j:
     data = json.load(j)
     assert os.path.basename(data['video']) == os.path.basename(args.video)
     for start, end in data['detections']:
@@ -70,6 +71,10 @@ for v in detection_fish.values():
         false_positives += 1
 
 # Summarize
-print('True positives:', len(detections) - false_positives, 'detection ranges')
-print('False positives:', false_positives, 'detection ranges')
-print('False negatives:', undetected_fish, 'missed fish')
+json.dump({
+    'detection_ranges': len(detections),
+    'dr_false_positives': false_positives,
+    'dr_true_positives': len(detections) - false_positives,
+    'false_negatives': undetected_fish,
+}, sys.stdout, indent=4, sort_keys=True, default=utils.jsonconverter)
+print()
