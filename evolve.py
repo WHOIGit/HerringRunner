@@ -26,7 +26,7 @@ def evaluate_inner(individual):
         '--threshold', str(individual[2]),
         '--dilations', str(individual[3]),
         '--bg-weight', str(individual[4]),
-    ], capture_output=True, check=True)
+    ], stdout=subprocess.PIPE, check=True)
 
     with open('detector-out.json', 'wb') as f:
         f.write(detector.stdout)
@@ -37,7 +37,7 @@ def evaluate_inner(individual):
         '--clickpoints',
             'data/clickpoints/20170821170158310_finalstartstopandtrack.cdb',
         '--json', '-'
-    ], capture_output=True, input=detector.stdout, check=True)
+    ], stdout=subprocess.PIPE, input=detector.stdout, check=True)
 
     # Compute a score from the output
     # Output contains some junk in stdout we need to strip out
