@@ -2,6 +2,7 @@
 import random
 import json
 import subprocess
+import threading
 
 import numpy as np
 
@@ -15,6 +16,9 @@ def evaluate(individual):
         return (0.0,)
 
 def evaluate_inner(individual):
+    print('evaluating individual', individual, \
+        'on thread', threading.get_ident())
+
     # These scripts weren't designed to be used as a module, so we invoke
     # them as subprocesses.
     detector = subprocess.run([
@@ -51,6 +55,8 @@ def evaluate_inner(individual):
         false_neg_score = 1 - \
             (result['false_negatives'] / result['detection_ranges'])
         score = true_pos_score + false_neg_score  # addition OK?
+
+    print('individual', individual, 'received score', score)
     return (score,)
 
 
@@ -93,14 +99,14 @@ toolbox.register('select', tools.selTournament, tournsize=3)
 
 def main():
     # Run the evolution
-    pop = toolbox.population(n=2)
+    pop = toolbox.population(n=100)
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register('avg', np.mean)
     stats.register('std', np.std)
     stats.register('min', np.min)
     stats.register('max', np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=3, 
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=20,
                                    stats=stats, halloffame=hof, verbose=True)
 
     # Print hall of fame
