@@ -36,6 +36,8 @@ def process(frame, bg, threshold=0, dilations=0):
     # Turn any pixel that is brighter than our threshold white
     if threshold > 0:
         _, thresh = cv2.threshold(delta, threshold, 255, cv2.THRESH_BINARY)
+    else:
+        thresh = delta
 
     # Dilate the thresholded image to fill in holes
     if dilations > 0:
