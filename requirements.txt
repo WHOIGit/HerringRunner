@@ -1,4 +1,5 @@
 -e hg+https://bitbucket.org/fabry_biophysics/clickpoints@90562e2#egg=clickpoints
 deap == 1.3.0
 opencv-python == 4.1.0.25
+pyqt5 == 5.13.0
 scoop == 0.7.1.1
