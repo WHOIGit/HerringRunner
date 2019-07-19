@@ -47,14 +47,8 @@ def evaluate_inner(individual):
     # Output contains some junk in stdout we need to strip out
     output = evaluator.stdout[evaluator.stdout.index(b'{'):]
     result = json.loads(output)
-    if result['detection_ranges'] == 0:
-        score = 0.0
-    else:
-        true_pos_score = \
-            result['dr_true_positives'] / result['detection_ranges']
-        false_neg_score = 1 - \
-            (result['false_negatives'] / result['detection_ranges'])
-        score = true_pos_score + false_neg_score  # addition OK?
+    print(result)
+    score = result['mcc']
 
     print('individual', individual, 'received score', score)
     return (score,)
@@ -99,14 +93,14 @@ toolbox.register('select', tools.selTournament, tournsize=3)
 
 def main():
     # Run the evolution
-    pop = toolbox.population(n=100)
+    pop = toolbox.population(n=3)
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register('avg', np.mean)
     stats.register('std', np.std)
     stats.register('min', np.min)
     stats.register('max', np.max)
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=20,
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=2,
                                    stats=stats, halloffame=hof, verbose=True)
 
     # Print hall of fame

@@ -2,6 +2,7 @@
 import argparse
 import datetime
 import json
+import math
 import os
 import sys
 
@@ -36,45 +37,80 @@ with (sys.stdin if args.json == '-' else open(args.json)) as j:
 # Get framerate information from the video
 video = cv2.VideoCapture(args.video)
 framerate = video.get(cv2.CAP_PROP_FPS)
+total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 video = None
 
 
-# A map of detection ranges to actual fish
-detection_fish = { d: 0 for d in detections }
-
-# A count of fish that were not in detected frames
-undetected_fish = 0
+# The scorecard
+true_positives = 0
+false_negatives = 0
+true_negatives = 0
+false_negatives = 0
 
 
 # Loop over all Fish markers in the database
+frames_with_fish = set()
 db = clickpoints.DataFile(args.clickpoints)
 for marker in db.getMarkers(type=db.getMarkerType('Fish')):
-    timestamp = datetime.timedelta(seconds=marker.image.frame / framerate)
+    frames_with_fish.add(marker.image.frame)
 
-    # Search for a detection range containing this fish
+
+# Now figure out which detection ranges contain fish frames
+expected_fish = { d: 0 for d in detections }
+for frame in frames_with_fish:
+    timestamp = datetime.timedelta(seconds=frame / framerate)
+
+    # Search for a detection range containing this frame
     found = False
     for d in detections:
-        if d[0] <= timestamp <= d[1]:  # inclusive OK?
-            detection_fish[d] += 1
+        if d[0] <= timestamp <= d[1]:
+            expected_fish[d] += 1
             found = True
             break
         elif d[1] > timestamp:  # exploit sorted order to short circuit
             break
 
     if not found:
-        undetected_fish += 1
+        false_negatives += 1
 
-# Count the number of detection ranges that didn't actually contain any fish
+
+# Count up all the frames in detected ranges that contained no actual fish
 false_positives = 0
-for v in detection_fish.values():
+for k, v in expected_fish.items():
     if v == 0:
-        false_positives += 1
+        false_positives += int((k[1] - k[0]).total_seconds() * framerate) + 1
+
+
+# Count up the frames that were in detected ranges
+true_positives = sum(expected_fish.values())
+
+
+# Count up frames that were *not* in detected ranges, minus the ones that should
+# have been
+true_negatives = total_frames - false_negatives
+for d in detections:
+    true_negatives -= int((d[1] - d[0]).total_seconds() * framerate) + 1
+
+assert (true_positives + true_negatives + false_positives + false_negatives) \
+    == total_frames
+
+
+# Calculate the Matthews correlation coefficient score
+num = (true_positives * true_negatives - false_positives * false_negatives)
+den = (true_positives + false_positives) * \
+      (true_positives + false_negatives) * \
+      (true_negatives + false_positives) * \
+      (true_negatives + false_negatives)
+mcc = 0 if den == 0 else (num / math.sqrt(den))
+
 
 # Summarize
 json.dump({
-    'detection_ranges': len(detections),
-    'dr_false_positives': false_positives,
-    'dr_true_positives': len(detections) - false_positives,
-    'false_negatives': undetected_fish,
+    'frames': total_frames,
+    'true_positives': true_positives,
+    'false_positives': false_positives,
+    'true_negatives': true_negatives,
+    'false_negatives': false_negatives,
+    'mcc': mcc,
 }, sys.stdout, indent=4, sort_keys=True, default=utils.jsonconverter)
 print()
