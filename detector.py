@@ -11,33 +11,24 @@ import utils
 def preprocess(frame, blur_factor):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     if blur_factor > 0:
-        gray = cv2.GaussianBlur(gray, (blur_factor, blur_factor), 0)
+        gray = cv2.medianBlur(gray, blur_factor)
+    # gray = cv2.createCLAHE().apply(gray)  # very strange results
     return gray
 
 
-def update_background(bg, frame, bg_weight):
+def subtract_background(bg, frame, bg_threshold):
     if bg is None:
-        return cv2.UMat(frame) if isinstance(frame, cv2.UMat) \
-            else frame.copy().astype('float')
-
-    if isinstance(bg, cv2.UMat):
-        # accumulateWeighted does not seem to be available?
-        bg = cv2.addWeighted(bg, 1.0 - bg_weight, frame, bg_weight, 0.0)
-    else:
-        cv2.accumulateWeighted(frame, bg, bg_weight)
-
-    return bg
+        bg = cv2.createBackgroundSubtractorMOG2(varThreshold=bg_threshold, detectShadows=False)
+    mask = bg.apply(frame)
+    return bg, cv2.bitwise_and(frame, frame, mask=mask)
 
 
-def process(frame, bg, threshold=0, dilations=0):
-    # Remove the background from the image
-    delta = cv2.absdiff(frame, cv2.convertScaleAbs(bg))
-    
+def process(frame, threshold=0, dilations=0):
     # Turn any pixel that is brighter than our threshold white
     if threshold > 0:
-        _, thresh = cv2.threshold(delta, threshold, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY)
     else:
-        thresh = delta
+        thresh = frame
 
     # Dilate the thresholded image to fill in holes
     if dilations > 0:
@@ -83,18 +74,17 @@ if __name__ == '__main__':
     group.add_argument('--accelerate', action='store_true',
         help='enable GPU acceleration (experimental)')
     group.add_argument('--blur-factor', type=int, default=25,
-        help='size of the Gaussian blur kernel (must be odd) (0 = off)')
+        help='size of the median blur kernel (must be odd) (0 = off)')
     group.add_argument('--threshold', type=int, default=5,
         help='brightness threshold (0 = off)')
     group.add_argument('--dilations', type=int, default=2,
         help='number of dilation iterations (0 = off)')
-    group.add_argument('--bg-weight', type=float, default=0.6,
-        help='background average weight for current frame (between 0.0 and 1.0)')
+    group.add_argument('--bg-threshold', type=float, default=16.0,
+        help='background subtractor threshold')
     args = parser.parse_args()
 
     # Validate arguments
     assert args.blur_factor == 0 or args.blur_factor % 2 == 1
-    assert 0.0 <= args.bg_weight <= 1.0
     args.timeout = datetime.timedelta(seconds=args.timeout)
 
     # This will hold the background image, which will be subtracted off
@@ -143,10 +133,11 @@ if __name__ == '__main__':
         frame = preprocess(frame, blur_factor=args.blur_factor)
 
         # Update the background
-        bg = update_background(bg, frame, bg_weight=args.bg_weight)
+        bg, frame = subtract_background(bg, frame,bg_threshold=args.bg_threshold)
 
         # Process
-        processed = process(frame, bg, threshold=args.threshold, dilations=args.dilations)
+        processed = process(frame, threshold=args.threshold,
+            dilations=args.dilations)
 
         # Calculate coverage
         coverage = measure_coverage(processed, vid_area)
