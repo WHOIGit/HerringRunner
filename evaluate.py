@@ -104,6 +104,22 @@ den = (true_positives + false_positives) * \
 mcc = 0 if den == 0 else (num / math.sqrt(den))
 
 
+# Calculate a weighted MCC score as well
+total_fish_frames = true_positives + false_negatives
+total_nonfish_frames = true_negatives + false_positives
+wtp = true_positives / total_fish_frames
+wtn = true_negatives / total_nonfish_frames
+wfp = false_positives / total_nonfish_frames
+wfn = false_negatives / total_fish_frames
+
+num = (wtp * wtn - wfp * wfn)
+den = (wtp + wfp) * \
+      (wtp + wfn) * \
+      (wtn + wfp) * \
+      (wtn + wfn)
+wmcc = 0 if den == 0 else (num / math.sqrt(den))
+
+
 # Summarize
 json.dump({
     'frames': total_frames,
@@ -112,5 +128,6 @@ json.dump({
     'true_negatives': true_negatives,
     'false_negatives': false_negatives,
     'mcc': mcc,
+    'wmcc': wmcc,
 }, sys.stdout, indent=4, sort_keys=True, default=utils.jsonconverter)
 print()
