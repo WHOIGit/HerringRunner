@@ -8,10 +8,15 @@ import cv2
 import utils
 
 
-def preprocess(frame, blur_factor):
+def preprocess(frame, blur_factor, blur_type='gaussian'):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     if blur_factor > 0:
-        gray = cv2.medianBlur(gray, blur_factor)
+        if blur_type == 'gaussian':
+            gray = cv2.GaussianBlur(gray, (blur_factor, blur_factor), 0)
+        elif blur_type == 'median':
+            gray = cv2.medianBlur(gray, blur_factor)
+        else:
+            raise NotImplementedError()
     # gray = cv2.createCLAHE().apply(gray)  # very strange results
     return gray
 
@@ -73,8 +78,10 @@ if __name__ == '__main__':
     group = parser.add_argument_group('image processing options')
     group.add_argument('--accelerate', action='store_true',
         help='enable GPU acceleration (experimental)')
+    group.add_argument('--blur-type', type=str, choices=('median', 'gaussian'),
+        default='gaussian', help='blur algorithm to use')
     group.add_argument('--blur-factor', type=int, default=25,
-        help='size of the median blur kernel (must be odd) (0 = off)')
+        help='size of the blur kernel (must be odd) (0 = off)')
     group.add_argument('--threshold', type=int, default=5,
         help='brightness threshold (0 = off)')
     group.add_argument('--dilations', type=int, default=2,
@@ -130,7 +137,8 @@ if __name__ == '__main__':
             frame = cv2.UMat(frame)
 
         # Preprocess
-        frame = preprocess(frame, blur_factor=args.blur_factor)
+        frame = preprocess(frame, blur_factor=args.blur_factor,
+            blur_type=args.blur_type)
 
         # Update the background
         bg, frame = subtract_background(bg, frame,bg_threshold=args.bg_threshold)
