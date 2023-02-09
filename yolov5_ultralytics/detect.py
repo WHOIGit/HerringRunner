@@ -136,7 +136,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             save_path = str(save_dir / p.name)  # im.jpg
             txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             if save_null_txt and save_txt:
-                Path(txt_path).touch() 
+                Path(txt_path + '.txt').touch() 
             s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop

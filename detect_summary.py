@@ -344,6 +344,18 @@ if __name__=='__main__':
     
     # create detections dataframe: video, frame, model_count
     label_files = get_labelfiles_from_txtdir(args.DETECTIONS)
+    
+    if not label_files:
+        print('Error: No Frames found.')
+        if args.outdir:
+            fname_full = args.outfile or 'results.full.csv'
+            fname_full = os.path.join(args.outdir,fname_full)
+            print('Writing:',fname_full)
+            with open(fname_full,'w') as f:
+                header='video,frame,ts,count,cloudcat,daycat,mooncat'
+                f.write(header+'\n')
+        sys.exit('DONE')
+    
     df_detect = create_df_from_labels(label_files)
  
     if args.outdir:
